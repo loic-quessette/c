@@ -19,7 +19,7 @@ void* receive_messages(void* arg) {
     while (1) {
         int bytes_read = read(client_fd, buffer, sizeof(buffer) - 1);
         if (bytes_read <= 0) {
-            printf("Erreur de lecture ou serveur déconnecté.\n");
+            printf("Error reading or server disconnected.\n");
             break;
         }
         buffer[bytes_read] = '\0';
@@ -34,7 +34,7 @@ int main() {
 
     client_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (client_fd < 0) {
-        perror("Erreur de création de socket");
+        perror("Socket creation error");
         exit(1);
     }
 
@@ -44,23 +44,23 @@ int main() {
     server_addr.sin_addr.s_addr = inet_addr(SERVER_ADDR);
 
     if (connect(client_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-        perror("Erreur de connexion au serveur");
+        perror("Server connection error");
         close(client_fd);
         exit(1);
     }
 
-    printf("Entrez votre nom d'utilisateur: ");
+    printf("Enter your username: ");
     fgets(username, sizeof(username), stdin);
     username[strcspn(username, "\n")] = 0;
 
     if (pthread_create(&receive_thread, NULL, receive_messages, NULL) != 0) {
-        perror("Erreur de création du thread de réception");
+        perror("Receive thread creation error");
         close(client_fd);
         exit(1);
     }
 
     char channel_name[50];
-    printf("Entrez le nom du canal: ");
+    printf("Enter channel name: ");
     fgets(channel_name, sizeof(channel_name), stdin);
     channel_name[strcspn(channel_name, "\n")] = 0;
 
@@ -70,7 +70,7 @@ int main() {
 
     char message[BUFFER_SIZE];
     while (1) {
-        printf("Vous: ");
+        printf("You: ");
         fgets(message, sizeof(message), stdin);
         message[strcspn(message, "\n")] = 0;
 

@@ -38,6 +38,11 @@ void send_channel_history(int client_fd, int channel_id) {
     char message[BUFFER_SIZE];
     char time_str[100];
 
+    if (channel->message_count == 0) {
+        snprintf(message, sizeof(message), "Bienvenue dans le canal %s. Aucun message encore.\n", channel->name);
+        write(client_fd, message, strlen(message));
+    }
+
     for (int i = 0; i < channel->message_count; i++) {
         struct tm* time_info = localtime(&channel->messages[i].timestamp);
         strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", time_info);
@@ -56,16 +61,19 @@ void send_channel_history(int client_fd, int channel_id) {
 
 int create_or_join_channel(char* channel_name) {
     for (int i = 0; i < MAX_CHANNELS; i++) {
-        if (channels[i].message_count > 0 && strcmp(channels[i].name, channel_name) == 0) {
+        if (strcmp(channels[i].name, channel_name) == 0) {
+            printf("User joined channel: %s\n", channel_name);
             return i;
         }
     }
 
     for (int i = 0; i < MAX_CHANNELS; i++) {
-        if (channels[i].message_count == 0) {
+        if (channels[i].client_count == 0) {
             strncpy(channels[i].name, channel_name, sizeof(channels[i].name) - 1);
             channels[i].message_count = 0;
             channels[i].client_count = 0;
+
+            printf("Channel created: %s\n", channel_name);
             return i;
         }
     }
@@ -125,6 +133,11 @@ void* handle_client(void* arg) {
     char channel_name[50];
     char username[50];
     int channel_id = -1;
+    struct sockaddr_in client_addr;
+    socklen_t addr_len = sizeof(client_addr);
+
+    getpeername(client_fd, (struct sockaddr*)&client_addr, &addr_len);
+    char* client_ip = inet_ntoa(client_addr.sin_addr);
 
     int bytes_read = read(client_fd, buffer, sizeof(buffer) - 1);
     if (bytes_read <= 0) {
@@ -134,6 +147,8 @@ void* handle_client(void* arg) {
     buffer[bytes_read] = '\0';
 
     sscanf(buffer, "%49[^:]:%49s", username, channel_name);
+
+    printf("Client connected: IP=%s, Username=%s\n", client_ip, username);
 
     channel_id = create_or_join_channel(channel_name);
     if (channel_id == -1) {
@@ -149,6 +164,12 @@ void* handle_client(void* arg) {
         write(client_fd, "Le canal est plein.\n", 20);
         close(client_fd);
         return NULL;
+    }
+
+    if (channel->message_count == 0) {
+        char welcome_msg[BUFFER_SIZE];
+        snprintf(welcome_msg, sizeof(welcome_msg), "Bienvenue dans le canal %s ! Vous êtes le premier à y entrer.\n", channel_name);
+        write(client_fd, welcome_msg, strlen(welcome_msg));
     }
 
     send_channel_history(client_fd, channel_id);
