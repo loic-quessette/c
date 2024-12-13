@@ -166,12 +166,6 @@ void* handle_client(void* arg) {
         return NULL;
     }
 
-    if (channel->message_count == 0) {
-        char welcome_msg[BUFFER_SIZE];
-        snprintf(welcome_msg, sizeof(welcome_msg), "Bienvenue dans le canal %s ! Vous êtes le premier à y entrer.\n", channel_name);
-        write(client_fd, welcome_msg, strlen(welcome_msg));
-    }
-
     send_channel_history(client_fd, channel_id);
 
     while (1) {
@@ -180,6 +174,39 @@ void* handle_client(void* arg) {
         if (bytes_read <= 0) {
             break;
         }
+
+        // Vérifier si le message est une commande
+		if (strncmp(buffer, "/join ", 6) == 0) {
+			char new_channel_name[50];
+			sscanf(buffer + 6, "%49s", new_channel_name);
+			printf("User %s switching from channel %s to %s\n", username, channel->name, new_channel_name);
+
+			// Retirer du canal actuel
+			for (int i = 0; i < channel->client_count; i++) {
+				if (channel->clients[i] == client_fd) {
+    				channel->clients[i] = channel->clients[channel->client_count - 1];
+    				channel->client_count--;
+    				break;
+				}
+			}
+		// Rejoindre le nouveau canal
+		int new_channel_id = create_or_join_channel(new_channel_name);
+		if (new_channel_id == -1) {
+			write(client_fd, "Impossible de rejoindre ce canal.\n", 34);
+			continue;
+		}
+		// Mettre à jour le canal courant
+		channel_id = new_channel_id;
+		channel = &channels[channel_id];
+		channel->clients[channel->client_count++] = client_fd;
+
+		// Envoyer l'historique du nouveau canal
+		send_channel_history(client_fd, channel_id);
+
+		snprintf(buffer, sizeof(buffer), "Vous avez rejoint le canal %s.\n", new_channel_name);
+		write(client_fd, buffer, strlen(buffer));
+		continue;
+	}
 
         broadcast_message(channel_id, buffer, username);
     }
