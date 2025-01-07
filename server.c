@@ -59,10 +59,10 @@ void send_channel_history(int client_fd, int channel_id) {
     }
 }
 
-int create_or_join_channel(char* channel_name) {
+int create_or_join_channel(char* channel_name, char* username) {
     for (int i = 0; i < MAX_CHANNELS; i++) {
         if (strcmp(channels[i].name, channel_name) == 0) {
-            printf("User joined channel: %s\n", channel_name);
+            printf("L'utilisateur %s a rejoint le canal: %s\n", username, channel_name);
             return i;
         }
     }
@@ -73,7 +73,7 @@ int create_or_join_channel(char* channel_name) {
             channels[i].message_count = 0;
             channels[i].client_count = 0;
 
-            printf("Channel created: %s\n", channel_name);
+            printf("L'utilisateur %s a créé le canal: %s\n", username, channel_name);
             return i;
         }
     }
@@ -148,9 +148,9 @@ void* handle_client(void* arg) {
 
     sscanf(buffer, "%49[^:]:%49s", username, channel_name);
 
-    printf("Client connected: IP=%s, Username=%s\n", client_ip, username);
+    printf("Nouvelle connexion: IP=%s, Username=%s\n", client_ip, username);
 
-    channel_id = create_or_join_channel(channel_name);
+    channel_id = create_or_join_channel(channel_name, username);
     if (channel_id == -1) {
         write(client_fd, "Canal plein, veuillez réessayer plus tard.\n", 42);
         close(client_fd);
@@ -179,7 +179,7 @@ void* handle_client(void* arg) {
 		if (strncmp(buffer, "/join ", 6) == 0) {
 			char new_channel_name[50];
 			sscanf(buffer + 6, "%49s", new_channel_name);
-			printf("User %s switching from channel %s to %s\n", username, channel->name, new_channel_name);
+			printf("%s est passé du canal %s au canal %s\n", username, channel->name, new_channel_name);
 
 			// Retirer du canal actuel
 			for (int i = 0; i < channel->client_count; i++) {
@@ -190,7 +190,7 @@ void* handle_client(void* arg) {
 				}
 			}
 		// Rejoindre le nouveau canal
-		int new_channel_id = create_or_join_channel(new_channel_name);
+		int new_channel_id = create_or_join_channel(new_channel_name, username);
 		if (new_channel_id == -1) {
 			write(client_fd, "Impossible de rejoindre ce canal.\n", 34);
 			continue;

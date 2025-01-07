@@ -6,6 +6,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <signal.h>
+
 
 #define SERVER_ADDR "127.0.0.1"
 #define SERVER_PORT 8080
@@ -14,12 +16,20 @@
 int client_fd;
 char username[50];
 
+void handle_sigint(int sig) {
+    printf("\n\033[1;31mDéconnexion forcée par l'utilisateur (Ctrl+C).\033[0m\n");
+    if (client_fd >= 0) {
+        close(client_fd); // Fermer proprement le socket
+    }
+    exit(0); // Quitter le programme
+}
+
 void* receive_messages(void* arg) {
     char buffer[BUFFER_SIZE];
     while (1) {
         int bytes_read = read(client_fd, buffer, sizeof(buffer) - 1);
         if (bytes_read <= 0) {
-            printf("\n\033[1;31m[Erreur]\033[0m Déconnexion du serveur.\n");
+            printf("\n\033[1;31m[Vous vous êtes déconnecté.]\033[0m On espère vous revoir très vite !\n");
             break;
         }
         buffer[bytes_read] = '\0';
@@ -31,6 +41,9 @@ void* receive_messages(void* arg) {
 }
 
 int main() {
+    // Associer le gestionnaire de signal
+    signal(SIGINT, handle_sigint);
+
     struct sockaddr_in server_addr;
     pthread_t receive_thread;
 
@@ -81,7 +94,7 @@ int main() {
     // Boucle principale pour l'envoi des messages
     char message[BUFFER_SIZE];
     printf("\n\033[1;32m=== Chat ===\033[0m\n");
-    printf("\033[1;35mUtilisez /exit pour quitter.\033[0m\n");
+    printf("\033[1;35mUtilisez /exit pour quitter et /join [nom du canal] pour changer de canal.\033[0m\n");
 
     while (1) {
         printf("\033[1;33mVous :\033[0m ");
