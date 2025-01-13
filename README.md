@@ -16,4 +16,4 @@ gcc -o client client.c
 J'ai rajouté des couleurs du coté client pour rendre le chat plus lisible et plus agréable.
 
 J'ai également ajouté l'heure à laquelle les messages sont envoyés ainsi que des logs côté serveur pour voir les 
-connexions des clients.
+connexions des clients, la création des canaux, le changement de canal ...
