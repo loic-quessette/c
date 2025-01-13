@@ -91,11 +91,12 @@ int main() {
     snprintf(buffer, sizeof(buffer), "%s:%s", username, channel_name);
     write(client_fd, buffer, strlen(buffer));
 
-    // Boucle principale pour l'envoi des messages
+
     char message[BUFFER_SIZE];
     printf("\n\033[1;32m=== Chat ===\033[0m\n");
     printf("\033[1;35mUtilisez /exit pour quitter et /join [nom du canal] pour changer de canal.\033[0m\n");
 
+	// Boucle principale pour l'envoi des messages
     while (1) {
         printf("\033[1;33mVous :\033[0m ");
         fgets(message, sizeof(message), stdin);
@@ -114,7 +115,6 @@ int main() {
             // Ajout d'une pause pour montrer la transition
             sleep(1);
 
-            printf("\033[1;36mVous avez rejoint un nouveau canal.\033[0m\n");
             continue;
         }
 
